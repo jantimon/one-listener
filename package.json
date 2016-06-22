@@ -1,12 +1,14 @@
 {
   "name": "one-listener",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "start": "rm -rf node_modules && npm install",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "babel": "babel src/index.js > index.js"
+    "babel": "babel src/index.js > index.js",
+    "prepublish": "npm run babel",
+    "examples": "browserify -o examples/examples.js examples/examples.src.js"
   },
   "keywords": [],
   "author": "Gregor Adams <greg@pixelass.com> (http://pixelass.com)",
@@ -14,6 +16,23 @@
   "devDependencies": {
     "babel-cli": "^6.10.1",
     "babel-preset-es2015": "^6.9.0",
-    "babel-preset-stage-0": "^6.5.0"
+    "babel-preset-stage-0": "^6.5.0",
+    "babelify": "^7.3.0",
+    "browserify": "^13.0.1",
+    "shortid": "^2.2.6"
+  },
+  "browserify": {
+    "transform": [
+      "babelify",
+      [
+        "babelify",
+        {
+          "presets": [
+            "es2015",
+            "stage-0"
+          ]
+        }
+      ]
+    ]
   }
 }

@@ -5,6 +5,8 @@
  * @author  Gregor Adams <greg@pixelass.com> (http://pixelass.com)
  */
 
+import uniqueId from './unique-id';
+
 /**
  * global collection of listeners
  * This object receives live updates when an enentListener is requested or canceled
@@ -23,8 +25,9 @@ const eventListeners = {};
  * @param  {String} id - unique id 
  * @param  {Function} handler - default eventListener handler
  */
-const requestEventListener = (event, id, handler) => {
+const requestEventListener = (event, handler) => {
     let eL = {};
+    let id = uniqueId();
     if (eventListeners.hasOwnProperty(event) && typeof eventListeners[event] === 'object') {
         Object.assign(eL, eventListeners[event]);
     }
@@ -32,6 +35,7 @@ const requestEventListener = (event, id, handler) => {
         eL[id] = handler;
     }
     eventListeners[event] = eL;
+    return id;
 };
 
 /**

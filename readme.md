@@ -24,23 +24,28 @@ npm install one-listener
 
 ## Usage
 
+Look at the examples folder for this example
+
 ```js
 
-import { requestEventListener, cancelEventListener } from 'one-listener';
+import { requestEventListener, cancelEventListener } from '../src';
 
 
 // request mousemove 
-requestEventListener('mousemove', 'UNIQUE_ID_1', (e)=> {
-  console.log({ x: e.pageX, y: e.pageY });
+const trackMove = requestEventListener('mousemove', (e) => {
+    console.log({
+        x: e.pageX,
+        y: e.pageY
+    });
 });
 
 // request scroll
 // and cancel mousemove on condition 
-requestEventListener('scroll', 'UNIQUE_ID_2', (e)=> {
-  console.log(window.scrollY);
-  if (window.scrollY > 100) {
-    cancelEventListener('mousemove','UNIQUE_ID_1');
-  }
+const trackScroll = requestEventListener('scroll', (e) => {
+    console.log(window.scrollY);
+    if (window.scrollY > 100) {
+        cancelEventListener('mousemove', trackMove);
+    }
 });
 
 ```
