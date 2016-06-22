@@ -5,15 +5,19 @@
  * @author  Gregor Adams <greg@pixelass.com> (http://pixelass.com)
  */
 
-import uniqueId from './unique-id';
-
 /**
  * global collection of listeners
- * This object receives live updates when an enentListener is requested or canceled
+ * This object is the internal store for the event listeners
  * @const
  * @type {Object}
  */
-const eventListeners = {};
+const eventListeners = {
+    scroll: [],
+    resize: [],
+    mousewheel: [],
+    mousemove: [],
+    mouseup: []
+};
 
 /**
  * request an eventListener
@@ -21,19 +25,14 @@ const eventListeners = {};
  * Builds the eventListener Object
  * @param  {String} event - name of the event to request
  * @param  {Function} handler - default eventListener handler
- * @return {String} returns a unique id to be used when canceling the eventListener
+ * @return {Function} returns a function which will cancel the eventListener
  */
 const requestEventListener = (event, handler) => {
-    let eL = {};
-    let id = uniqueId();
-    if (eventListeners.hasOwnProperty(event) && typeof eventListeners[event] === 'object') {
-        Object.assign(eL, eventListeners[event]);
+    if (!eventListeners.hasOwnProperty(event)) {
+        throw new Error('Unkown event ' + event); 
     }
-    if (!eL.hasOwnProperty(id)) {
-        eL[id] = handler;
-    }
-    eventListeners[event] = eL;
-    return id;
+    eventListeners[event].push(handler);
+    return () => cancelEventListener(event, handler);
 };
 
 /**
@@ -42,19 +41,18 @@ const requestEventListener = (event, handler) => {
  * deletes the handler from the `eventListeners` object.
  * deletes the event object if it is empty.
  * @param  {String} event - name of the event to cancel
- * @param  {String} id - unique id 
+ * @param  {Function} handler - handler to be removed
  */
-const cancelEventListener = (event, id) => {
-    let eL = Object.assign({}, eventListeners[event]);
-    if (eL.hasOwnProperty(id)) {
-        delete eL[id];
+const cancelEventListener = (event, handler) => {
+    if (!eventListeners.hasOwnProperty(event)) {
+        throw new Error('Unkown event ' + event); 
     }
-    let listeners = Object.keys(eL);
-    if (listeners.length <= 0) {
-        delete eventListeners[event];
-    } else {
-        eventListeners[event] = eL;
+    const index = eventListeners[event].indexOf(handler);
+    // Skip if the handler doesn't exist
+    if (index === -1) {
+        return;
     }
+    eventListeners[event].splice(index, 1);
 };
 
 /**
@@ -63,12 +61,7 @@ const cancelEventListener = (event, id) => {
  * @param  {Event} e - scroll event
  */
 const handleScroll = (e) => {
-    if (!eventListeners.hasOwnProperty('scroll')) {
-        return;
-    }
-    let listeners = eventListeners.scroll;
-    let handlers = Object.keys(listeners);
-    handlers.forEach(handler => requestAnimationFrame(listeners[handler]));
+    eventListeners.scroll.forEach(handler => requestAnimationFrame(() => handler(e)));
 };
 
 /**
@@ -77,12 +70,7 @@ const handleScroll = (e) => {
  * @param  {Event} e - resize event
  */
 const handleResize = (e) => {
-    if (!eventListeners.hasOwnProperty('resize')) {
-        return;
-    }
-    let listeners = eventListeners.resize;
-    let handlers = Object.keys(listeners);
-    handlers.forEach(handler => requestAnimationFrame(listeners[handler]));
+    eventListeners.resize.forEach(handler => requestAnimationFrame(() => handler(e)));
 };
 
 /**
@@ -91,12 +79,7 @@ const handleResize = (e) => {
  * @param  {Event} e - mousewheel event
  */
 const handleMousewheel = (e) => {
-    if (!eventListeners.hasOwnProperty('mousewheel')) {
-        return;
-    }
-    let listeners = eventListeners.mousewheel;
-    let handlers = Object.keys(listeners);
-    handlers.forEach(handler => requestAnimationFrame(listeners[handler]));
+    eventListeners.mousewheel.forEach(handler => requestAnimationFrame(() => handler(e)));
 };
 
 /**
@@ -105,12 +88,7 @@ const handleMousewheel = (e) => {
  * @param  {Event} e - mousemove event
  */
 const handleMousemove = (e) => {
-    if (!eventListeners.hasOwnProperty('mousemove')) {
-        return;
-    }
-    let listeners = eventListeners.mousemove;
-    let handlers = Object.keys(listeners);
-    handlers.forEach(handler => requestAnimationFrame(listeners[handler]));
+    eventListeners.mousemove.forEach(handler => requestAnimationFrame(() => handler(e)));
 };
 
 /**
@@ -119,12 +97,7 @@ const handleMousemove = (e) => {
  * @param  {Event} e - mouseup event
  */
 const handleMouseup = (e) => {
-    if (!eventListeners.hasOwnProperty('mouseup')) {
-        return;
-    }
-    let listeners = eventListeners.mouseup;
-    let handlers = Object.keys(listeners);
-    handlers.forEach(handler => listeners[handler](e));
+    eventListeners.mouseup.forEach(handler => handler(e));
 };
 
 /*

@@ -4,7 +4,7 @@
 var _src = require('../src');
 
 // request mousemove
-var trackMove = (0, _src.requestEventListener)('mousemove', function (e) {
+var stopMoveTracking = (0, _src.requestEventListener)('mousemove', function (e) {
     console.log({
         x: e.pageX,
         y: e.pageY
@@ -13,44 +13,45 @@ var trackMove = (0, _src.requestEventListener)('mousemove', function (e) {
 
 // request scroll
 // and cancel mousemove on condition
-var trackScroll = (0, _src.requestEventListener)('scroll', function (e) {
+var trackScroll = function trackScroll(e) {
     console.log(window.scrollY);
     if (window.scrollY > 100) {
-        (0, _src.cancelEventListener)('mousemove', trackMove);
+        stopMoveTracking();
     }
-});
+};
+
+(0, _src.requestEventListener)('scroll', trackScroll);
+
+// remove scroll tracking after 5 seconds
+setTimeout(function () {
+    (0, _src.cancelEventListener)('scroll', trackScroll);
+    console.log('scrolling canceled');
+}, 5000);
 
 },{"../src":2}],2:[function(require,module,exports){
 'use strict';
 
-var _typeof2 = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
-var _typeof = typeof Symbol === "function" && _typeof2(Symbol.iterator) === "symbol" ? function (obj) {
-    return typeof obj === "undefined" ? "undefined" : _typeof2(obj);
-} : function (obj) {
-    return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj === "undefined" ? "undefined" : _typeof2(obj);
-}; /**
-    * @module  one-listener
-    * @export requestEvent
-    * @export cancelEvent
-    * @author  Gregor Adams <greg@pixelass.com> (http://pixelass.com)
-    */
-
-var _uniqueId = require('./unique-id');
-
-var _uniqueId2 = _interopRequireDefault(_uniqueId);
-
-function _interopRequireDefault(obj) {
-    return obj && obj.__esModule ? obj : { default: obj };
-}
+/**
+ * @module  one-listener
+ * @export requestEvent
+ * @export cancelEvent
+ * @author  Gregor Adams <greg@pixelass.com> (http://pixelass.com)
+ */
 
 /**
  * global collection of listeners
- * This object receives live updates when an enentListener is requested or canceled
+ * This object is the internal store for the event listeners
  * @const
  * @type {Object}
  */
-var eventListeners = {};
+
+var eventListeners = {
+    scroll: [],
+    resize: [],
+    mousewheel: [],
+    mousemove: [],
+    mouseup: []
+};
 
 /**
  * request an eventListener
@@ -58,19 +59,16 @@ var eventListeners = {};
  * Builds the eventListener Object
  * @param  {String} event - name of the event to request
  * @param  {Function} handler - default eventListener handler
- * @return {String} returns a unique id to be used when canceling the eventListener
+ * @return {Function} returns a function which will cancel the eventListener
  */
 var requestEventListener = function requestEventListener(event, handler) {
-    var eL = {};
-    var id = (0, _uniqueId2.default)();
-    if (eventListeners.hasOwnProperty(event) && _typeof(eventListeners[event]) === 'object') {
-        Object.assign(eL, eventListeners[event]);
+    if (!eventListeners.hasOwnProperty(event)) {
+        throw new Error('Unkown event ' + event);
     }
-    if (!eL.hasOwnProperty(id)) {
-        eL[id] = handler;
-    }
-    eventListeners[event] = eL;
-    return id;
+    eventListeners[event].push(handler);
+    return function () {
+        return cancelEventListener(event, handler);
+    };
 };
 
 /**
@@ -79,19 +77,18 @@ var requestEventListener = function requestEventListener(event, handler) {
  * deletes the handler from the `eventListeners` object.
  * deletes the event object if it is empty.
  * @param  {String} event - name of the event to cancel
- * @param  {String} id - unique id 
+ * @param  {Function} handler - handler to be removed
  */
-var cancelEventListener = function cancelEventListener(event, id) {
-    var eL = Object.assign({}, eventListeners[event]);
-    if (eL.hasOwnProperty(id)) {
-        delete eL[id];
+var cancelEventListener = function cancelEventListener(event, handler) {
+    if (!eventListeners.hasOwnProperty(event)) {
+        throw new Error('Unkown event ' + event);
     }
-    var listeners = Object.keys(eL);
-    if (listeners.length <= 0) {
-        delete eventListeners[event];
-    } else {
-        eventListeners[event] = eL;
+    var index = eventListeners[event].indexOf(handler);
+    // Skip if the handler doesn't exist
+    if (index === -1) {
+        return;
     }
+    eventListeners[event].splice(index, 1);
 };
 
 /**
@@ -100,13 +97,10 @@ var cancelEventListener = function cancelEventListener(event, id) {
  * @param  {Event} e - scroll event
  */
 var handleScroll = function handleScroll(e) {
-    if (!eventListeners.hasOwnProperty('scroll')) {
-        return;
-    }
-    var listeners = eventListeners.scroll;
-    var handlers = Object.keys(listeners);
-    handlers.forEach(function (handler) {
-        return requestAnimationFrame(listeners[handler]);
+    eventListeners.scroll.forEach(function (handler) {
+        return requestAnimationFrame(function () {
+            return handler(e);
+        });
     });
 };
 
@@ -116,13 +110,10 @@ var handleScroll = function handleScroll(e) {
  * @param  {Event} e - resize event
  */
 var handleResize = function handleResize(e) {
-    if (!eventListeners.hasOwnProperty('resize')) {
-        return;
-    }
-    var listeners = eventListeners.resize;
-    var handlers = Object.keys(listeners);
-    handlers.forEach(function (handler) {
-        return requestAnimationFrame(listeners[handler]);
+    eventListeners.resize.forEach(function (handler) {
+        return requestAnimationFrame(function () {
+            return handler(e);
+        });
     });
 };
 
@@ -132,13 +123,10 @@ var handleResize = function handleResize(e) {
  * @param  {Event} e - mousewheel event
  */
 var handleMousewheel = function handleMousewheel(e) {
-    if (!eventListeners.hasOwnProperty('mousewheel')) {
-        return;
-    }
-    var listeners = eventListeners.mousewheel;
-    var handlers = Object.keys(listeners);
-    handlers.forEach(function (handler) {
-        return requestAnimationFrame(listeners[handler]);
+    eventListeners.mousewheel.forEach(function (handler) {
+        return requestAnimationFrame(function () {
+            return handler(e);
+        });
     });
 };
 
@@ -148,13 +136,10 @@ var handleMousewheel = function handleMousewheel(e) {
  * @param  {Event} e - mousemove event
  */
 var handleMousemove = function handleMousemove(e) {
-    if (!eventListeners.hasOwnProperty('mousemove')) {
-        return;
-    }
-    var listeners = eventListeners.mousemove;
-    var handlers = Object.keys(listeners);
-    handlers.forEach(function (handler) {
-        return requestAnimationFrame(listeners[handler]);
+    eventListeners.mousemove.forEach(function (handler) {
+        return requestAnimationFrame(function () {
+            return handler(e);
+        });
     });
 };
 
@@ -164,13 +149,8 @@ var handleMousemove = function handleMousemove(e) {
  * @param  {Event} e - mouseup event
  */
 var handleMouseup = function handleMouseup(e) {
-    if (!eventListeners.hasOwnProperty('mouseup')) {
-        return;
-    }
-    var listeners = eventListeners.mouseup;
-    var handlers = Object.keys(listeners);
-    handlers.forEach(function (handler) {
-        return listeners[handler](e);
+    eventListeners.mouseup.forEach(function (handler) {
+        return handler(e);
     });
 };
 
@@ -186,19 +166,5 @@ window.addEventListener('mouseup', handleMouseup);
 
 exports.requestEventListener = requestEventListener;
 exports.cancelEventListener = cancelEventListener;
-
-},{"./unique-id":3}],3:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-//import { generate } from 'shortid';
-//const uniqueId = generate;
-var counter = 0;
-var uniqueId = function uniqueId() {
-  return "" + ++counter;
-};
-exports.default = uniqueId;
 
 },{}]},{},[1]);

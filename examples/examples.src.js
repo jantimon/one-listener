@@ -2,7 +2,7 @@ import { requestEventListener, cancelEventListener } from '../src';
 
 
 // request mousemove 
-const trackMove = requestEventListener('mousemove', (e) => {
+const stopMoveTracking = requestEventListener('mousemove', (e) => {
     console.log({
         x: e.pageX,
         y: e.pageY
@@ -11,9 +11,17 @@ const trackMove = requestEventListener('mousemove', (e) => {
 
 // request scroll
 // and cancel mousemove on condition 
-const trackScroll = requestEventListener('scroll', (e) => {
+const trackScroll = (e) => {
     console.log(window.scrollY);
     if (window.scrollY > 100) {
-        cancelEventListener('mousemove', trackMove);
+        stopMoveTracking();
     }
-});
+};
+
+requestEventListener('scroll', trackScroll);
+
+// remove scroll tracking after 5 seconds
+setTimeout(() => {
+    cancelEventListener('scroll', trackScroll);
+    console.log('scrolling canceled');
+}, 5000);
