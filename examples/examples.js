@@ -54,13 +54,11 @@ var eventListeners = {};
 
 /**
  * request an eventListener
- * This function requires an id to store handlers.
- * A handler cannot be overwritten. it has to be canceled before a listener can be assigned to the id
- * An id can be used for multiple events: 
- * e.g. you can have a scroll event and resize event with the same id
+ * Creates an internal unique id and returns it for further usage.
+ * Builds the eventListener Object
  * @param  {String} event - name of the event to request
- * @param  {String} id - unique id 
  * @param  {Function} handler - default eventListener handler
+ * @return {String} returns a unique id to be used when canceling the eventListener
  */
 var requestEventListener = function requestEventListener(event, handler) {
     var eL = {};

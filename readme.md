@@ -28,7 +28,7 @@ Look at the examples folder for this example
 
 ```js
 
-import { requestEventListener, cancelEventListener } from '../src';
+import { requestEventListener, cancelEventListener } from 'one-listener';
 
 
 // request mousemove 
